@@ -1,0 +1,211 @@
+-- ***************************************************************************
+--                         Avoe - python-mode script
+--
+--           Copyright (C) 2026 By Ulrik Hørlyk Hjort
+--
+-- Permission is hereby granted, free of charge, to any person obtaining
+-- a copy of this software and associated documentation files (the
+-- "Software"), to deal in the Software without restriction, including
+-- without limitation the rights to use, copy, modify, merge, publish,
+-- distribute, sublicense, and/or sell copies of the Software, and to
+-- permit persons to whom the Software is furnished to do so, subject to
+-- the following conditions:
+--
+-- The above copyright notice and this permission notice shall be
+-- included in all copies or substantial portions of the Software.
+--
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+-- EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+-- MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+-- NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+-- LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+-- OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+-- WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+-- ***************************************************************************
+
+--  Python mode for Avoe, written in Avoe script.
+--
+--  RET indents the new line: one level deeper after a line ending in ':',
+--  one level shallower after return/pass/break/continue/raise, aligned
+--  after an open bracket.  else/elif/except/finally line up with their
+--  block when RET is pressed.  Python indentation is ambiguous, so TAB
+--  first goes to the computed indentation and then, pressed again, steps
+--  back one level at a time.
+
+Python_Indent_Width : Natural := 4;
+
+Define_Mode
+  (Name                => "python",
+   Title               => "Python",
+   Extensions          => ".py .pyw",
+   Keywords            => "False None True and as assert async await break class continue "
+                          & "def del elif else except finally for from global if import in "
+                          & "is lambda match case nonlocal not or pass raise return try while "
+                          & "with yield",
+   Types               => "bool bytes dict float int list object set str tuple type self cls "
+                          & "len range print open super isinstance enumerate zip Exception",
+   Line_Comment        => "#",
+   Block_Comment_Start => """""""",   --  Docstrings are shown like comments
+   Block_Comment_End   => """""""",
+   Backslash_Escapes   => True);
+
+function Py_Code (Line : Positive) return String is
+begin
+   return Strip_Hash_Comment (Line_Text (Line));
+end Py_Code;
+
+--  The nearest line before Line with code, or 0
+function Py_Previous_Code (Line : Natural) return Natural is
+   N : Natural := Line;
+begin
+   loop
+      if N <= 1 then
+         return 0;
+      end if;
+      N := N - 1;
+      if Py_Code (N) /= "" then
+         return N;
+      end if;
+   end loop;
+end Py_Previous_Code;
+
+--  Opening minus closing brackets
+function Py_Bracket_Balance (Text : String) return Integer is
+begin
+   return Count_Char (Text, '(') + Count_Char (Text, '[') + Count_Char (Text, '{')
+     - Count_Char (Text, ')') - Count_Char (Text, ']') - Count_Char (Text, '}');
+end Py_Bracket_Balance;
+
+--  The column just after the last bracket still open at the end of Text,
+--  or -1
+function Py_Open_Bracket_Column (Text : String) return Integer is
+   Depth : Natural := 0;
+begin
+   for I in reverse 1 .. Text'Length loop
+      if Text (I) = ')' or else Text (I) = ']' or else Text (I) = '}' then
+         Depth := Depth + 1;
+      elsif Text (I) = '(' or else Text (I) = '[' or else Text (I) = '{' then
+         if Depth = 0 then
+            return I;
+         end if;
+         Depth := Depth - 1;
+      end if;
+   end loop;
+   return -1;
+end Py_Open_Bracket_Column;
+
+function Py_Is_Continuation_Keyword (Code : String) return Boolean is
+begin
+   return Starts_With_Word (Code, "else") or else Starts_With_Word (Code, "elif")
+     or else Starts_With_Word (Code, "except") or else Starts_With_Word (Code, "finally");
+end Py_Is_Continuation_Keyword;
+
+function Py_Is_Block_Opener (Code : String) return Boolean is
+begin
+   return Ends_With (Code, ":")
+     and then (Starts_With_Word (Code, "if") or else Starts_With_Word (Code, "elif")
+               or else Starts_With_Word (Code, "else") or else Starts_With_Word (Code, "for")
+               or else Starts_With_Word (Code, "while") or else Starts_With_Word (Code, "try")
+               or else Starts_With_Word (Code, "except") or else Starts_With_Word (Code, "with"));
+end Py_Is_Block_Opener;
+
+function Python_Indentation (Line : Positive) return Natural is
+   Current : constant String := Py_Code (Line);
+   P       : constant Natural := Py_Previous_Code (Line);
+   Base    : Natural := 0;
+   Column  : Integer := -1;
+   Prev    : String := "";
+begin
+   if P = 0 then
+      return 0;
+   end if;
+
+   --  else/elif/except/finally: line up with the nearest block opener that
+   --  is not deeper than the line is now
+   if Py_Is_Continuation_Keyword (Current) then
+      declare
+         Limit : constant Natural := Indent_Of (Line_Text (Line));
+         N     : Natural := Line;
+      begin
+         loop
+            N := Py_Previous_Code (N);
+            exit when N = 0;
+            if Indent_Of (Line_Text (N)) <= Limit and then Py_Is_Block_Opener (Py_Code (N)) then
+               return Indent_Of (Line_Text (N));
+            end if;
+         end loop;
+      end;
+   end if;
+
+   --  Inside brackets: align after the open bracket
+   Column := Py_Open_Bracket_Column (Line_Text (P));
+   if Column >= 0 then
+      return Column;
+   end if;
+
+   --  The previous line closes brackets opened earlier: use the opening line
+   Base := Indent_Of (Line_Text (P));
+   declare
+      Q       : Natural := P;
+      Balance : Integer := Py_Bracket_Balance (Line_Text (P));
+   begin
+      while Balance < 0 and then Q > 1 loop
+         Q := Py_Previous_Code (Q);
+         exit when Q = 0;
+         Balance := Balance + Py_Bracket_Balance (Line_Text (Q));
+      end loop;
+      if Q > 0 then
+         Base := Indent_Of (Line_Text (Q));
+      end if;
+   end;
+
+   Prev := Py_Code (P);
+   if Ends_With (Prev, ":") then
+      return Base + Python_Indent_Width;
+   elsif Starts_With_Word (Prev, "return") or else Starts_With_Word (Prev, "pass")
+     or else Starts_With_Word (Prev, "break") or else Starts_With_Word (Prev, "continue")
+     or else Starts_With_Word (Prev, "raise")
+   then
+      return Integer'Max (0, Base - Python_Indent_Width);
+   end if;
+   return Base;
+end Python_Indentation;
+
+procedure Python_Indent_Line is
+   pragma Command;
+   Target : constant Natural := Python_Indentation (Line_Number);
+   Now    : constant Natural := Current_Indentation;
+begin
+   if Last_Command = "python_indent_line" then
+      --  Repeated TAB: one level out, and around again from the top
+      if Now >= Python_Indent_Width then
+         Indent_To (Now - Python_Indent_Width);
+      else
+         Indent_To (Target);
+      end if;
+   else
+      Indent_To (Target);
+   end if;
+end Python_Indent_Line;
+
+procedure Python_Newline_And_Indent is
+   pragma Command;
+begin
+   if Py_Is_Continuation_Keyword (Trim (Current_Line)) then
+      declare
+         Target : constant Natural := Python_Indentation (Line_Number);
+      begin
+         if Target < Current_Indentation then
+            Indent_To (Target);
+         end if;
+      end;
+   end if;
+   Delete_Blanks_Before_Point;
+   Insert (LF);
+   Indent_To (Python_Indentation (Line_Number));
+end Python_Newline_And_Indent;
+
+Bind_Mode_Key ("python", "TAB", "python_indent_line");
+Bind_Mode_Key ("python", "RET", "python_newline_and_indent");
+Bind_Mode_Key ("python", "C-c C-f", "format_buffer");
+Set_Formatter ("python", "black -q - < %f");

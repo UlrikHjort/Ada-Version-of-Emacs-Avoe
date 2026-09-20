@@ -1,0 +1,11 @@
+--  Site-wide avoe configuration, loaded for every user after the bundled
+--  scripts and before the user's own scripts and init file.
+--
+--  Installed as PREFIX/etc/avoe/site.avoe (or /etc/avoe/site.avoe);
+--  "make install" never overwrites an existing copy.
+--
+--  Examples:
+--
+--     Set_Tab_Width (8);
+--     C_Indent_Width := 8;
+--     Bind_Key ("C-c c", "compile");

@@ -1,0 +1,18 @@
+---
+Language: Cpp
+BasedOnStyle: LLVM
+IndentWidth: 2
+ContinuationIndentWidth: 4
+ColumnLimit: 90
+BreakBeforeBraces: Attach
+SpaceBeforeParens: Always
+SpaceAfterCStyleCast: true
+AlwaysBreakAfterReturnType: None
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+SortIncludes: false
+KeepEmptyLinesAtTheStartOfBlocks: false
+# K&R braces for the C helper: { on the same line as the function, if,
+# else and while; two-space bodies; a space before ( and after a cast, as
+# in the Ada sources.  Run it with: make format

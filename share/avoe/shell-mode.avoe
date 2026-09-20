@@ -1,0 +1,137 @@
+-- ***************************************************************************
+--                          Avoe - shell-mode script
+--
+--           Copyright (C) 2026 By Ulrik Hørlyk Hjort
+--
+-- Permission is hereby granted, free of charge, to any person obtaining
+-- a copy of this software and associated documentation files (the
+-- "Software"), to deal in the Software without restriction, including
+-- without limitation the rights to use, copy, modify, merge, publish,
+-- distribute, sublicense, and/or sell copies of the Software, and to
+-- permit persons to whom the Software is furnished to do so, subject to
+-- the following conditions:
+--
+-- The above copyright notice and this permission notice shall be
+-- included in all copies or substantial portions of the Software.
+--
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+-- EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+-- MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+-- NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+-- LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+-- OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+-- WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+-- ***************************************************************************
+
+--  Shell script mode for Avoe, written in Avoe script.
+--
+--  then/do/else/in/{ open a level; fi/done/esac/else/elif/} close one;
+--  case patterns "x)" indent their commands and ";;" ends them; a line
+--  ending in '\' continues on the next line.
+
+Shell_Indent_Width : Natural := 4;
+
+Define_Mode
+  (Name              => "shell",
+   Title             => "Shell",
+   Extensions        => ".sh .bash .zsh .ksh .bashrc .bash_profile .profile .zshrc",
+   Keywords          => "if then else elif fi case esac for select while until do done in "
+                        & "function time return exit break continue local export readonly "
+                        & "declare typeset unset shift trap source eval exec set",
+   Types             => "echo printf read cd pwd pushd popd test true false kill wait alias "
+                        & "getopts umask",
+   Line_Comment      => "#",
+   Backslash_Escapes => True);
+
+function Sh_Code (Line : Natural) return String is
+begin
+   if Line = 0 then
+      return "";
+   end if;
+   return Strip_Hash_Comment (Line_Text (Line));
+end Sh_Code;
+
+function Sh_Previous_Code (Line : Natural) return Natural is
+   N : Natural := Line;
+begin
+   loop
+      if N <= 1 then
+         return 0;
+      end if;
+      N := N - 1;
+      if Sh_Code (N) /= "" then
+         return N;
+      end if;
+   end loop;
+end Sh_Previous_Code;
+
+function Sh_Is_Case_Pattern (Code : String) return Boolean is
+begin
+   return Ends_With (Code, ")") and then Count_Char (Code, '(') = 0
+     and then not Ends_With (Code, ";;");
+end Sh_Is_Case_Pattern;
+
+--  The first line of the command that ends on line P
+function Sh_Command_Start (P : Positive) return Positive is
+   Q : Positive := P;
+begin
+   while Q > 1 and then Ends_With (Sh_Code (Q - 1), "\") loop
+      Q := Q - 1;
+   end loop;
+   return Q;
+end Sh_Command_Start;
+
+function Shell_Indentation (Line : Positive) return Natural is
+   Current : constant String := Sh_Code (Line);
+   P       : constant Natural := Sh_Previous_Code (Line);
+   Prev    : String := "";
+   Result  : Integer := 0;
+begin
+   if P = 0 then
+      return 0;
+   end if;
+   Prev := Sh_Code (P);
+   Result := Indent_Of (Line_Text (Sh_Command_Start (P)));
+
+   if Ends_With (Prev, "\") then
+      return Result + Shell_Indent_Width;   --  Continuation line
+   end if;
+
+   if Ends_With_Word (Prev, "then") or else Ends_With_Word (Prev, "do")
+     or else Ends_With_Word (Prev, "else") or else Ends_With_Word (Prev, "in")
+     or else Ends_With (Prev, "{") or else Ends_With (Prev, "(")
+     or else Sh_Is_Case_Pattern (Prev)
+   then
+      Result := Result + Shell_Indent_Width;
+   elsif Ends_With (Prev, ";;") and then Count_Char (Prev, ')') = 0 then
+      Result := Result - Shell_Indent_Width;
+   end if;
+
+   if Starts_With_Word (Current, "fi") or else Starts_With_Word (Current, "done")
+     or else Starts_With_Word (Current, "esac") or else Starts_With_Word (Current, "else")
+     or else Starts_With_Word (Current, "elif") or else Starts_With (Current, "}")
+   then
+      Result := Result - Shell_Indent_Width;
+   end if;
+   return Integer'Max (0, Result);
+end Shell_Indentation;
+
+procedure Shell_Indent_Line is
+   pragma Command;
+begin
+   Indent_To (Shell_Indentation (Line_Number));
+end Shell_Indent_Line;
+
+procedure Shell_Newline_And_Indent is
+   pragma Command;
+begin
+   Shell_Indent_Line;
+   Delete_Blanks_Before_Point;
+   Insert (LF);
+   Shell_Indent_Line;
+end Shell_Newline_And_Indent;
+
+Bind_Mode_Key ("shell", "TAB", "shell_indent_line");
+Bind_Mode_Key ("shell", "RET", "shell_newline_and_indent");
+Bind_Mode_Key ("shell", "C-c C-f", "format_buffer");
+Set_Formatter ("shell", "shfmt %f");

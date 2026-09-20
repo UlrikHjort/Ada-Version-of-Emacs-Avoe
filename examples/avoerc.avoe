@@ -1,0 +1,80 @@
+--  Example Avoe init file.  To try it:
+--
+--     cp examples/avoerc.avoe ~/.avoerc
+--
+--  (~/.config/avoe/init.avoe works too, and is used instead if it exists.)
+--
+--  Avoe script looks like Ada but is relaxed: declarations are optional,
+--  values carry their type at run time, and every editor command can be
+--  called as a procedure (with an optional repeat count).
+
+--  Settings
+
+Set_Tab_Width (4);
+
+--  C-x C-c asks "Some buffers haven't been saved; leave anyway? (yes or no)"
+--  while any buffer, also one without a file, has unsaved changes
+Set_Confirm_Exit (True);
+
+--  Set_Backups (False);                     --  no file~ backup on the first save
+--  Set_Auto_Save (Keys => 100, Idle_Seconds => 10);
+--  Set_Fill_Column (78);                    --  M-q wraps at this column
+--  Set_Line_Numbers (True);                 --  line numbers in the left margin
+--  Set_Startup_Screen (False);              --  no *About* window at startup
+
+--  C-c d: duplicate the current line, keeping the cursor column
+procedure Duplicate_Line is
+   pragma Command;
+   Text   : constant String  := Current_Line;
+   Offset : constant Natural := Point - Line_Beginning_Position;
+begin
+   End_Of_Line;
+   Insert (LF & Text);
+   Goto_Char (Line_Beginning_Position + Offset);
+end Duplicate_Line;
+
+Bind_Key ("C-c d", "duplicate_line");
+
+--  Count the words in the current buffer
+function Count_Words return Natural is
+   Count   : Natural := 0;
+   In_Word : Boolean := False;
+begin
+   for I in Point_Min .. Point_Max - 1 loop
+      declare
+         C : constant Character := Char_After (I);
+      begin
+         if C in 'a' .. 'z' or else C in 'A' .. 'Z' or else C in '0' .. '9' then
+            if not In_Word then
+               Count := Count + 1;
+               In_Word := True;
+            end if;
+         else
+            In_Word := False;
+         end if;
+      end;
+   end loop;
+   return Count;
+end Count_Words;
+
+--  C-c w: show the word count
+procedure Show_Word_Count is
+   pragma Command;
+begin
+   Message ("Words in " & Buffer_Name & ":" & Count_Words'Image);
+end Show_Word_Count;
+
+Bind_Key ("C-c w", "show_word_count");
+
+--  C-c p: insert an Ada procedure skeleton
+procedure Insert_Procedure is
+   pragma Command;
+   Name : constant String := Read_String ("Procedure name: ", Default => "Foo");
+begin
+   Insert ("procedure " & Name & " is" & LF
+           & "begin" & LF
+           & "   null;" & LF
+           & "end " & Name & ";" & LF);
+end Insert_Procedure;
+
+Bind_Key ("C-c p", "insert_procedure");

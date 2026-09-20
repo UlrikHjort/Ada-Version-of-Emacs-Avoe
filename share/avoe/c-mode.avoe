@@ -1,0 +1,230 @@
+-- ***************************************************************************
+--                            Avoe - c-mode script
+--
+--           Copyright (C) 2026 By Ulrik Hørlyk Hjort
+--
+-- Permission is hereby granted, free of charge, to any person obtaining
+-- a copy of this software and associated documentation files (the
+-- "Software"), to deal in the Software without restriction, including
+-- without limitation the rights to use, copy, modify, merge, publish,
+-- distribute, sublicense, and/or sell copies of the Software, and to
+-- permit persons to whom the Software is furnished to do so, subject to
+-- the following conditions:
+--
+-- The above copyright notice and this permission notice shall be
+-- included in all copies or substantial portions of the Software.
+--
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+-- EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+-- MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+-- NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+-- LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+-- OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+-- WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+-- ***************************************************************************
+
+--  C mode for Avoe, written in Avoe script.
+--
+--  The syntax table below drives Avoe's native highlighter; indentation is
+--  plain script code, run when you press TAB, RET or '}'.  The style is
+--  K&R/Linux: braces on the same line, case labels level with the switch.
+
+C_Indent_Width : Natural := 4;
+
+Define_Mode
+  (Name                => "c",
+   Title               => "C",
+   Extensions          => ".c .h",
+   Keywords            => "auto break case const continue default do else enum extern for "
+                          & "goto if inline register restrict return sizeof static struct "
+                          & "switch typedef union volatile while",
+   Types               => "void char short int long float double signed unsigned "
+                          & "bool _Bool size_t ssize_t ptrdiff_t intptr_t uintptr_t "
+                          & "int8_t int16_t int32_t int64_t uint8_t uint16_t uint32_t "
+                          & "uint64_t FILE NULL true false",
+   Line_Comment        => "//",
+   Block_Comment_Start => "/*",
+   Block_Comment_End   => "*/",
+   Backslash_Escapes   => True);
+
+--  Starts_With, Ends_With, Count_Char, Indent_Of etc. come from 00-helpers.avoe
+
+------------------------------------------------------------------------------
+--  Looking at C lines
+------------------------------------------------------------------------------
+
+--  The line without surrounding blanks and trailing comments
+function C_Code (Text : String) return String is
+   Code : String := Trim (Text);
+   Pos  : Natural := Index (Code, "//");
+begin
+   if Pos > 0 then
+      Code := Trim (Code (1 .. Pos - 1));
+   end if;
+   Pos := Index (Code, "/*");
+   if Pos > 1 then
+      Code := Trim (Code (1 .. Pos - 1));
+   end if;
+   return Code;
+end C_Code;
+
+function Is_Comment_Or_Directive (Code : String) return Boolean is
+begin
+   return Code = "" or else Starts_With (Code, "#") or else Starts_With (Code, "*")
+     or else Starts_With (Code, "/*");
+end Is_Comment_Or_Directive;
+
+function Is_Label (Code : String) return Boolean is
+begin
+   return Ends_With (Code, ":")
+     and then (Starts_With_Word (Code, "case") or else Starts_With_Word (Code, "default"));
+end Is_Label;
+
+--  if/for/while/else/do whose body is the next statement (no brace)
+function Is_Braceless_Control (Code : String) return Boolean is
+begin
+   return (Starts_With_Word (Code, "if") or else Starts_With_Word (Code, "for")
+           or else Starts_With_Word (Code, "while") or else Starts_With_Word (Code, "else")
+           or else Starts_With_Word (Code, "do"))
+     and then not Ends_With (Code, ";")
+     and then not Ends_With (Code, "{")
+     and then not Ends_With (Code, "}");
+end Is_Braceless_Control;
+
+--  The nearest line before Line containing code, or 0
+function Previous_Code (Line : Natural) return Natural is
+   N : Natural := Line;
+begin
+   loop
+      if N <= 1 then
+         return 0;
+      end if;
+      N := N - 1;
+      if not Is_Comment_Or_Directive (C_Code (Line_Text (N))) then
+         return N;
+      end if;
+   end loop;
+end Previous_Code;
+
+------------------------------------------------------------------------------
+--  Indentation
+------------------------------------------------------------------------------
+
+function C_Indentation (Line : Positive) return Natural is
+   Current : constant String := C_Code (Line_Text (Line));
+   P       : constant Natural := Previous_Code (Line);
+   Prev    : String := "";
+   Base    : Natural := 0;
+   Result  : Integer := 0;
+   Opens, Closes : Integer := 0;
+begin
+   if Starts_With (Current, "#") then
+      return 0;
+   end if;
+
+   --  Inside a block comment: line up the stars
+   if Starts_With (Current, "*") and then Line > 1 then
+      declare
+         Above : constant String := Trim (Line_Text (Line - 1));
+      begin
+         if Starts_With (Above, "/*") then
+            return Indent_Of (Line_Text (Line - 1)) + 1;
+         elsif Starts_With (Above, "*") then
+            return Indent_Of (Line_Text (Line - 1));
+         end if;
+      end;
+   end if;
+
+   if P = 0 then
+      return 0;
+   end if;
+   Prev := C_Code (Line_Text (P));
+   Base := Indent_Of (Line_Text (P));
+
+   --  The previous line closes parentheses opened earlier: indent like
+   --  the line that opened them
+   if Count_Char (Prev, ')') > Count_Char (Prev, '(') then
+      declare
+         Q     : Natural := P;
+         Depth : Integer := Count_Char (Prev, '(') - Count_Char (Prev, ')');
+      begin
+         while Depth < 0 and then Q > 1 loop
+            Q := Previous_Code (Q);
+            exit when Q = 0;
+            Depth := Depth + Count_Char (C_Code (Line_Text (Q)), '(')
+                           - Count_Char (C_Code (Line_Text (Q)), ')');
+         end loop;
+         if Q > 0 then
+            Base := Indent_Of (Line_Text (Q));
+         end if;
+      end;
+   end if;
+
+   Opens := Count_Char (Prev, '{');
+   Closes := Count_Char (Prev, '}');
+   if Starts_With (Prev, "}") then
+      Closes := Closes - 1;   --  That brace already moved the line left
+   end if;
+
+   if Opens > Closes then
+      Result := Base + C_Indent_Width;
+   elsif Count_Char (Prev, '(') > Count_Char (Prev, ')') then
+      Result := Base + C_Indent_Width;
+   elsif Is_Label (Prev) then
+      Result := Base + C_Indent_Width;
+   elsif Ends_With (Prev, ";") then
+      Result := Base;
+      declare
+         PP : constant Natural := Previous_Code (P);
+      begin
+         if PP > 0 and then Is_Braceless_Control (C_Code (Line_Text (PP))) then
+            Result := Indent_Of (Line_Text (PP));
+         end if;
+      end;
+   elsif Ends_With (Prev, "{") or else Ends_With (Prev, "}") or else Ends_With (Prev, ",") then
+      Result := Base;
+   elsif Starts_With (Current, "{") then
+      Result := Base;   --  Function body or Allman style brace
+   else
+      Result := Base + C_Indent_Width;   --  Braceless body or continued expression
+   end if;
+
+   if Starts_With (Current, "}") or else Is_Label (Current) then
+      Result := Result - C_Indent_Width;
+   end if;
+   return Integer'Max (0, Result);
+end C_Indentation;
+
+------------------------------------------------------------------------------
+--  Commands and keys
+------------------------------------------------------------------------------
+
+procedure C_Indent_Line is
+   pragma Command;
+begin
+   Indent_To (C_Indentation (Line_Number));
+end C_Indent_Line;
+
+procedure C_Newline_And_Indent is
+   pragma Command;
+begin
+   C_Indent_Line;
+   Delete_Blanks_Before_Point;
+   Insert (LF);
+   C_Indent_Line;
+end C_Newline_And_Indent;
+
+procedure C_Electric_Brace is
+   pragma Command;
+begin
+   Insert ('}');
+   C_Indent_Line;
+end C_Electric_Brace;
+
+Bind_Mode_Key ("c", "TAB", "c_indent_line");
+Bind_Mode_Key ("c", "RET", "c_newline_and_indent");
+Bind_Mode_Key ("c", "}", "c_electric_brace");
+Bind_Mode_Key ("c", "C-c C-c", "compile");
+Bind_Mode_Key ("c", "C-c C-o", "find_other_file");
+Bind_Mode_Key ("c", "C-c C-f", "format_buffer");
+Set_Formatter ("c", "clang-format %f");

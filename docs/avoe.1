@@ -1,0 +1,77 @@
+.TH AVOE 1 "September 2026" "avoe 1.0.0" "User Commands"
+.SH NAME
+avoe \- a small Emacs-like editor written in Ada
+.SH SYNOPSIS
+.B avoe
+[\fB\-q\fR] [\fB\-\-no\-splash\fR] [\fIfile\fR ...]
+.br
+.B avoe
+\fB\-\-batch\fR \fIscript.avoe\fR [\fIfile\fR ...]
+.br
+.B avoe
+\fB\-\-paths\fR | \fB\-\-version\fR | \fB\-\-help\fR
+.SH DESCRIPTION
+.B avoe
+(Ada Version Of Emacs) is a terminal text editor with Emacs key bindings.
+It has multiple buffers and windows, incremental search, undo, syntax
+highlighting, a background compile buffer and major modes for Ada, C,
+Python and shell scripts.
+It is extended with Avoe script, a small Ada-flavoured language.
+.PP
+Press \fBC-x C-c\fR to exit, \fBC-x C-f\fR to open a file, \fBC-x C-s\fR to
+save and \fBM-x\fR to run a command by name.
+.SH OPTIONS
+.TP
+.BR \-q ", " \-\-no\-init
+Do not load the user's scripts and init file.
+.TP
+.B \-\-no\-splash
+Do not show the startup screen with the version and key hints.
+.TP
+.BI \-\-batch " script"
+Run an Avoe script without a terminal. Messages go to standard output,
+errors to standard error.
+.TP
+.B \-\-paths
+Show where avoe looks for scripts and configuration, and exit.
+.TP
+.B \-\-version
+Show the version and exit.
+.SH FILES
+Files are loaded at startup in this order; later ones can override earlier
+ones.
+.TP
+.I PREFIX/share/avoe/*.avoe
+Bundled scripts, including the language modes. Found relative to the
+executable.
+.TP
+.IR PREFIX/etc/avoe/site.avoe " or " /etc/avoe/site.avoe
+Site-wide configuration.
+.TP
+.I ~/.config/avoe/scripts/*.avoe
+The user's own scripts and modes.
+.TP
+.IR ~/.config/avoe/init.avoe " or " ~/.avoerc
+The user's init file.
+.TP
+.I file~
+Backup of a file's previous contents, made on its first save in a session.
+.TP
+.I ~/.local/state/avoe/auto-save/
+Auto-saved unsaved changes, offered for recovery after a crash.
+.TP
+.I ~/.local/state/avoe/internal-errors.log
+Details and tracebacks of internal errors, for bug reports.
+.SH ENVIRONMENT
+.TP
+.B AVOE_DATA_DIR
+Use this directory instead of \fIPREFIX/share/avoe\fR.
+.TP
+.B XDG_CONFIG_HOME
+Base of the user configuration directory (default \fI~/.config\fR).
+.TP
+.B XDG_STATE_HOME
+Base of the user state directory (default \fI~/.local/state\fR).
+.SH SEE ALSO
+.IR PREFIX/share/doc/avoe/README.md ,
+.I PREFIX/share/doc/avoe/avoe-script.md

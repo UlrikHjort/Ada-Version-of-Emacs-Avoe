@@ -1,0 +1,26 @@
+name = "avoe"
+description = "A small Emacs-like terminal editor with an Ada-flavoured script language"
+long-description = """
+avoe (Ada Version Of Emacs) is a Jove-sized Emacs-like editor for the Linux
+terminal. It has Emacs key bindings, multiple buffers and windows, undo,
+incremental and regexp search, a background compile buffer, auto-save, and
+major modes for Ada, C, Python and shell. It is extended with Avoe script,
+a lightweight Ada-flavoured language.
+"""
+version = "1.0.0"
+
+licenses = "MIT"
+authors = ["Ulrik Hørlyk Hjort"]
+maintainers = ["Ulrik Hørlyk Hjort <ulrik.hoerlyk.hjort@gmail.com>"]
+maintainers-logins = []
+tags = ["editor", "emacs", "terminal", "tui"]
+
+executables = ["avoe"]
+project-files = ["avoe.gpr"]
+
+[available.'case(os)']
+linux = true
+'...' = false
+
+[[depends-on]]
+gnat = ">=10"
