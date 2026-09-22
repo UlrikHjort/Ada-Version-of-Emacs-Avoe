@@ -1,4 +1,5 @@
 # Ada Version of Emacs - Avoe [ay-VOH]
+[![Mentioned in Awesome Ada](https://awesome.re/mentioned-badge.svg)](https://github.com/ohenley/awesome-ada)
 
 A small Emacs-like editor for the Linux terminal, written in Ada 2012.
 In the spirit of Jove: familiar Emacs keys, small and fast, no ncurses.
