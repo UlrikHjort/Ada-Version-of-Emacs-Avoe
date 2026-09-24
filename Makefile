@@ -3,7 +3,8 @@
 #   make                                 build bin/avoe
 #   make test                            run the test suite
 #   make screenshots                     remake the README pictures
-#   make format                          reformat the C sources now (clang-format)
+#   make format                          reformat the C sources (clang-format)
+#   make dist                            release tarball in dist/ with its checksum
 #   sudo make install                    install under /usr/local
 #   make install PREFIX=~/.local         install for yourself, no root needed
 #   make install DESTDIR=pkg PREFIX=/usr stage files for a package
@@ -18,15 +19,18 @@ MANDIR     ?= $(PREFIX)/share/man/man1
 SYSCONFDIR ?= $(if $(filter /usr,$(PREFIX)),/etc,$(PREFIX)/etc)
 
 INSTALL ?= install
+GPRBUILD ?= gprbuild
+# Extra gprbuild switches; a package build uses -R (no RUNPATH in the binary)
+GPRFLAGS ?=
 
-.PHONY: all clean run test install uninstall screenshots format format-soft
+.PHONY: all clean run test install uninstall screenshots format format-soft dist distcheck
 
-# The C sources are formatted before each build when clang-format is
-# installed.  Turn it off with: make AUTOFORMAT=no
-AUTOFORMAT ?= yes
+# A build never changes the source tree (a package build must not).
+# Format the C sources with "make format", or with "make AUTOFORMAT=yes".
+AUTOFORMAT ?= no
 
 all: $(if $(filter yes,$(AUTOFORMAT)),format-soft)
-	gprbuild -p -P avoe.gpr
+	$(GPRBUILD) -p $(GPRFLAGS) -P avoe.gpr
 
 format-soft:
 	@command -v clang-format >/dev/null 2>&1 && clang-format -i src/*.c || true
@@ -66,8 +70,33 @@ format:
 screenshots: all
 	python3 tools/screenshot.py
 
+VERSION := $(shell sed -n 's/.*Number  *: *constant String *:= *"\([^"]*\)".*/\1/p' \
+                     src/version_info.ads)
+DISTDIR ?= dist
+DIST    := avoe-$(VERSION)
+TARBALL := $(DISTDIR)/$(DIST).tar.gz
+DIST_FILES := README.md CHANGELOG.md LICENSE Makefile alire.toml avoe.gpr .clang-format \
+              src share docs etc examples tests tools
+
+dist:
+	@rm -rf $(DISTDIR) && mkdir -p $(DISTDIR)
+	tar czf $(TARBALL) --transform 's,^,$(DIST)/,' \
+	    --exclude=__pycache__ --exclude='*.pyc' --exclude='*~' $(DIST_FILES)
+	cd $(DISTDIR) && sha256sum $(DIST).tar.gz > $(DIST).tar.gz.sha256
+	@echo "Made $(TARBALL)"
+
+# Unpack the tarball somewhere else, build it and run a test
+distcheck: dist
+	@rm -rf $(DISTDIR)/check && mkdir $(DISTDIR)/check
+	tar xzf $(TARBALL) -C $(DISTDIR)/check
+	$(MAKE) -C $(DISTDIR)/check/$(DIST)
+	cd $(DISTDIR)/check/$(DIST)/tests && python3 test_basics.py
+	@rm -rf $(DISTDIR)/check
+	@echo "$(TARBALL) builds and runs"
+
 clean:
 	gprclean -P avoe.gpr
+	rm -rf $(DISTDIR)
 
 run: all
 	./bin/avoe
