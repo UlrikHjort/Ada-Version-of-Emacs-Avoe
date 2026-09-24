@@ -1,0 +1,59 @@
+name: build and test
+
+# Builds avoe and runs the whole test suite on x86-64 and on arm64
+# (the Raspberry Pi architecture), with the GNAT from the distribution.
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            arch: x86-64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+    name: ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install GNAT and gprbuild
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends gnat gprbuild python3
+
+      - name: Versions
+        run: |
+          uname -m
+          gnatmake --version | head -1
+          gprbuild --version | head -1
+
+      - name: Build
+        run: make
+
+      - name: Version and paths
+        run: |
+          ./bin/avoe --version
+          ./bin/avoe --paths
+
+      - name: Test
+        run: make test
+
+      - name: Install and check the installed program
+        run: |
+          make install PREFIX="$PWD/.inst"
+          .inst/bin/avoe --version
+          .inst/bin/avoe --paths
+          test -f .inst/share/man/man1/avoe.1
+          test -f .inst/share/avoe/c-mode.avoe
+
+      - name: Release tarball builds on its own
+        run: make distcheck
