@@ -4,6 +4,18 @@ Versions follow [semantic versioning](https://semver.org): 1.x.y releases
 stay compatible with your init file and scripts, y is for fixes, x for new
 features.
 
+## Unreleased
+
+- Man page added.
+- A build no longer formats the C sources (`AUTOFORMAT=no` by default), so it
+  never changes the source tree; `make format` still does it on request.
+- `make dist` makes a release tarball with its SHA-256, and `make distcheck`
+  unpacks it elsewhere, builds it and runs a test.
+- `GPRFLAGS` passes switches to gprbuild (a package build uses `-R`, which
+  keeps library paths out of the binary).
+- .github/workflows/ci.yml: build, test, install and distcheck on x86-64 and
+  on arm64.
+
 ## 1.0.0 - 2026-09-20
 
 The first release.
