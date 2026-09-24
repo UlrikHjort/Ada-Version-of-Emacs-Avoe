@@ -12,31 +12,447 @@ avoe \- a small Emacs-like editor written in Ada
 \fB\-\-paths\fR | \fB\-\-version\fR | \fB\-\-help\fR
 .SH DESCRIPTION
 .B avoe
-(Ada Version Of Emacs) is a terminal text editor with Emacs key bindings.
-It has multiple buffers and windows, incremental search, undo, syntax
-highlighting, a background compile buffer and major modes for Ada, C,
-Python and shell scripts.
-It is extended with Avoe script, a small Ada-flavoured language.
+(Ada Version Of Emacs) is a text editor for the Linux terminal, written in
+Ada 2012.  It follows the spirit of JOVE: the Emacs keys and ideas that
+people use every day, in a small and fast program, and nothing more.  It
+does not use
+.IR ncurses ;
+it puts the terminal in raw mode itself, writes ANSI escape sequences, and
+redraws only the screen rows that changed.
 .PP
-Press \fBC-x C-c\fR to exit, \fBC-x C-f\fR to open a file, \fBC-x C-s\fR to
-save and \fBM-x\fR to run a command by name.
-.SH OPTIONS
+A
+.I buffer
+holds the text of a file.  Several buffers can be open at once, and the
+screen can be split into
+.I windows
+that each show a buffer.  The line at the bottom of every window is its
+.IR "mode line" ,
+which shows whether the buffer was changed, its name, where you are in it
+(line and column, counting columns from 0) and its major mode.  The last
+line of the screen is the
+.IR "echo area" ,
+where messages appear and where commands ask for file names, search
+patterns and answers.
+.PP
+Every command has a name, such as
+.BR find_file .
+Keys are bound to those names, and
+.B M-x
+runs a command by name with TAB completion.  Scripts can define new
+commands and bind them, so a script command and a built-in command are
+used in the same way.
+.PP
+In this page
+.B C-x
+means Control-x, and
+.B M-x
+means Meta-x, which on most keyboards is Alt-x, or ESC followed by x.
+.SH INVOKING AVOE
+Named files are opened at startup; the first one is shown.  A file that
+does not exist gives an empty buffer that is created when you save it.
 .TP
 .BR \-q ", " \-\-no\-init
-Do not load the user's scripts and init file.
+Do not load the user's scripts and init file.  Bundled scripts and the
+site configuration are still loaded.
 .TP
 .B \-\-no\-splash
-Do not show the startup screen with the version and key hints.
+Do not show the startup screen.
 .TP
 .BI \-\-batch " script"
-Run an Avoe script without a terminal. Messages go to standard output,
-errors to standard error.
+Run an Avoe script without a terminal, then exit.  Messages go to standard
+output and errors to standard error.  This is how scripts are tested and
+how avoe can be used to change files from a shell script.
 .TP
 .B \-\-paths
-Show where avoe looks for scripts and configuration, and exit.
+Show where avoe looks for scripts and configuration, and which of those
+files exist, then exit.
 .TP
-.B \-\-version
-Show the version and exit.
+.BR \-\-version ", " \-\-help
+Show the version, or a summary of these options, and exit.
+.PP
+At startup the screen is split: the upper window shows
+.BR *About* ,
+a read-only buffer with the version, the author and a few keys, and the
+cursor is in the lower window with your file.
+.B C-x 1
+closes it,
+.B \-\-no\-splash
+skips it for one run, and
+.B "Set_Startup_Screen (False);"
+in the init file turns it off for good.
+.SH GETTING STARTED
+.B C-x C-f
+opens a file,
+.B C-x C-s
+saves it and
+.B C-x C-c
+leaves the editor.
+.B C-g
+cancels whatever is going on: a prompt, a search, or a command that asks
+for more keys.
+.PP
+Most commands take a repeat count.
+.B C-u
+followed by digits and a command runs it that many times, so
+.B "C-u 40 -"
+inserts forty dashes.
+.B C-u
+without digits means four.
+.PP
+While a command asks for something in the echo area, the usual editing
+keys work there too: C-a, C-e, C-b, C-f and the arrow keys move, DEL and
+C-d delete, M-DEL deletes a word, C-k kills to the end, C-u clears the
+line, C-y yanks, TAB completes file names, buffer names and command names,
+and M-p and M-n (or Up and Down) walk through what you typed there
+earlier.  RET accepts and C-g gives up.
+.SH KEY BINDINGS
+.B "M-x describe_bindings"
+lists every binding,
+.B "M-x describe_key"
+says what one key does, and
+.B "M-x apropos_command"
+lists the commands whose names contain a word.
+.SS Moving around
+.TP 16
+.B C-f, C-b
+one character forward or back
+.TP
+.B C-n, C-p
+one line down or up, keeping the column
+.TP
+.B M-f, M-b
+one word forward or back
+.TP
+.B C-a, C-e
+start or end of the line
+.TP
+.B M-m
+back to the first non-blank character of the line
+.TP
+.B M-<, M->
+start or end of the buffer
+.TP
+.B C-v, M-v
+one screen forward or back
+.TP
+.B M-{, M-}
+start or end of the paragraph
+.TP
+.B C-M-f, C-M-b
+over a bracketed group; the matching bracket is underlined
+.TP
+.B C-l
+put the current line in the middle of the window
+.TP
+.B M-g g
+go to a line by number
+.PP
+The arrow keys, Home, End, PgUp and PgDn do what you would expect, and
+Ctrl with the left and right arrows moves by words.
+.SS Changing text
+.TP 16
+.B RET, C-o
+break the line, or open a line below
+.TP
+.B C-j
+break the line and indent the new one
+.TP
+.B DEL, C-d
+delete the character before or under the cursor
+.TP
+.B M-DEL, M-d
+kill the word before or after the cursor
+.TP
+.B C-k
+kill to the end of the line; again to kill the line break
+.TP
+.B M-z
+kill up to and including a character you type
+.TP
+.B C-t, M-t
+swap the characters, or the words, around the cursor
+.TP
+.B C-x C-t
+swap this line with the one above
+.TP
+.B M-\e, M-SPC
+remove the blanks around the cursor, or leave exactly one
+.TP
+.B M-^
+join this line to the one above
+.TP
+.B M-u, M-l, M-c
+upper case, lower case or capitalise the word
+.TP
+.B C-x C-u, C-x C-l
+upper or lower case the region
+.TP
+.B M-q
+rewrap the paragraph or comment to the fill column
+.TP
+.B M-;
+comment or uncomment the line, or the region
+.TP
+.B M-/
+complete the word before the cursor from the words in your buffers;
+repeat it for the next suggestion
+.TP
+.B C-q
+insert the next key as a character, even a control character
+.TP
+.B "C-_, C-x u"
+undo; repeat to go further back.  Any other command in between lets you
+undo the undo
+.SS The mark, killing and yanking
+.TP 16
+.B C-SPC
+set the mark here.  The text between the mark and the cursor is the
+.IR region .
+.TP
+.B C-x C-x
+swap the cursor and the mark
+.TP
+.B C-x h
+the whole buffer becomes the region
+.TP
+.B C-w, M-w
+kill or copy the region
+.TP
+.B C-y
+yank back the last killed text
+.TP
+.B M-y
+right after C-y, replace it with an older kill
+.TP
+.B M-=
+count the lines, words and characters in the region, or in the buffer
+.PP
+Killing several times in a row collects the text into one entry, so
+.B "C-k C-k C-k"
+followed by
+.B C-y
+moves three lines.
+.SS Searching and replacing
+.TP 16
+.B C-s, C-r
+incremental search forward or back.  Type to extend it, C-s or C-r again
+for the next match, DEL to take back the last character, RET to stop where
+you are, C-g to go back to where you started.  A search without upper-case
+letters ignores case.
+.TP
+.B C-M-s, C-M-r
+the same with a regular expression
+.TP
+.B M-%
+query replace.  At each match: y or SPC replaces, n or DEL skips, ! does
+all the rest, . replaces and stops, q or RET stops.
+.PP
+.B "M-x replace_string" ,
+.B "M-x replace_regexp"
+and
+.B "M-x query_replace_regexp"
+work from the cursor to the end of the buffer.  In a regexp replacement
+\fB\e1\fR to \fB\e9\fR stand for the bracketed groups and \fB\e&\fR for the
+whole match.  Regular expressions are Perl-like and match within one line.
+.SS Files, buffers and windows
+.TP 16
+.B C-x C-f
+find a file
+.TP
+.B C-x C-s, C-x C-w
+save, or save under another name
+.TP
+.B C-x s
+offer to save every changed buffer
+.TP
+.B C-x i
+insert another file here
+.TP
+.B C-x C-q
+make the buffer read-only, or writable again
+.TP
+.B C-x b, C-x C-b
+switch to a buffer, or list the buffers
+.TP
+.B C-x k
+kill a buffer
+.TP
+.B C-x 2, C-x 1, C-x 0
+split the window, keep only this one, or close this one
+.TP
+.B C-x o
+go to the other window
+.TP
+.B C-x C-c
+leave, offering to save changed files
+.PP
+.B "M-x revert_buffer"
+reads the file again and throws away your changes, and
+.B "M-x recover_file"
+brings back what was auto-saved.
+.SS Keyboard macros
+.TP 16
+.B C-x (
+start recording the keys you press
+.TP
+.B C-x )
+stop recording
+.TP
+.B C-x e
+run the macro; press e again to run it once more.  With a repeat count,
+.B "C-u 20 C-x e"
+runs it twenty times.
+.PP
+What you type in the echo area is recorded too, so a macro can search,
+answer questions and run M-x commands.
+.SS Compiling and shell commands
+.TP 16
+.B C-c C-c
+compile (in Ada, Avoe script, C, Python and shell buffers)
+.TP
+.B "C-x `, M-g n, M-g p"
+go to the next or previous error
+.TP
+.B C-c C-o
+switch between a body and its spec, or a .c and its .h
+.TP
+.B C-c C-f
+run the mode's source formatter on the buffer
+.TP
+.B M-!
+run a shell command and show its output; with C-u, insert the output
+.TP
+.B M-|
+send the region to a shell command; with C-u, replace it with the output
+.PP
+The build runs in the background, and you can keep editing while its
+output arrives in the
+.B *compilation*
+buffer.  There, RET visits the error on the line, g compiles again and
+C-c C-k kills the build.
+.B "M-x grep"
+puts search results in the same buffer, so the same keys walk through
+them.
+.SS Help and the rest
+.TP 16
+.B M-x
+run a command by name
+.TP
+.B C-u
+repeat count for the next command
+.TP
+.B C-g
+cancel
+.TP
+.B C-x =
+describe the character under the cursor and where it is
+.TP
+.B M-:
+evaluate an Avoe script expression or statement
+.TP
+.B C-z
+suspend the editor; fg in the shell brings it back
+.PP
+.B "M-x about_avoe"
+shows the version and the keys from the startup screen again.
+.SH MAJOR MODES
+Each buffer has a major mode, chosen from the file name and shown in the
+mode line: Ada
+.RI ( .adb ", " .ads ", " .ada ", " .gpr ),
+Avoe script
+.RI ( .avoe ", " .avoerc ),
+C
+.RI ( .c ", " .h ),
+Python
+.RI ( .py ", " .pyw ),
+shell
+.RI ( .sh ", " .bash ", " .bashrc " and others),"
+Compilation for build output, and Fundamental for everything else.
+.B "M-x set_major_mode"
+changes it by hand.
+.PP
+A mode decides the syntax highlighting, what TAB and RET do, which
+formatter
+.B C-c C-f
+runs, and what
+.B M-;
+uses as a comment.  In Ada and Avoe script, TAB re-indents the line and
+RET re-indents it and indents the next one.  The C, Python and shell modes
+are written in Avoe script and live in
+.IR PREFIX/share/avoe/ ,
+so they can be read as examples and changed.
+.SH EXTENDING AVOE
+Avoe script is a small Ada-flavoured language: blocks and names look like
+Ada, but declarations are optional and values carry their type at run
+time.  A procedure with
+.B "pragma Command;"
+becomes an editor command, and
+.B Bind_Key
+gives it keys:
+.PP
+.RS
+.nf
+procedure Duplicate_Line is
+   pragma Command;
+   Text : constant String := Current_Line;
+begin
+   End_Of_Line;
+   Insert (LF & Text);
+end Duplicate_Line;
+
+Bind_Key ("C-c d", "duplicate_line");
+.fi
+.RE
+.PP
+Settings are ordinary calls in the init file, among them
+.BR "Set_Backups (False)" ,
+.BR "Set_Auto_Save (Keys => 100, Idle_Seconds => 10)" ,
+.BR "Set_Confirm_Exit (True)" ,
+.BR "Set_Line_Numbers (True)" ,
+.BR "Set_Startup_Screen (False)" ,
+.B "Set_Fill_Column (78)"
+and
+.BR "Set_Tab_Width (4)" .
+.B "M-x load_file" ,
+.B "M-x eval_buffer"
+and
+.B M-:
+run script code in a running editor; C-g interrupts a script that takes
+too long.  The language and every built-in function are described in
+.IR PREFIX/share/doc/avoe/avoe\-script.md .
+.SH SAVING, BACKUPS AND RECOVERY
+A save writes a temporary file next to the original and renames it into
+place, so an interrupted save never leaves a half-written file.
+Permissions are kept, and saving through a symbolic link writes the file
+it points to.  The first save of a file in a session keeps the previous
+contents as
+.IR file~ .
+.PP
+Unsaved changes are written to the auto-save directory every 300
+keystrokes and after 30 seconds without typing.  If avoe or the machine
+dies, opening the file again offers to bring those changes back;
+.B "M-x recover_file"
+does it at any time.  Auto-save files are removed when you save and when
+you leave normally.
+.PP
+If another program changes a file you are visiting, avoe reloads it when
+you have no unsaved changes, and warns you when you do; saving then asks
+first.
+.SH LIMITS
+A buffer holds about 1 GiB.  Undo remembers the most recent 20,000
+changes, or 16 MB of deleted text.  Lines longer than 4,096 bytes are
+shown without syntax colours.  A regular expression matches within one
+line.
+.SH DIAGNOSTICS
+avoe exits with status 0 when all is well, and 1 when it cannot use the
+terminal or when a
+.B \-\-batch
+script fails.  If a command fails because of a bug, the editor keeps
+running, says
+.BR "Internal error" ,
+and appends the details and a traceback to
+.IR ~/.local/state/avoe/internal\-errors.log .
+Please send that with a bug report.
 .SH FILES
 Files are loaded at startup in this order; later ones can override earlier
 ones.
@@ -72,6 +488,19 @@ Base of the user configuration directory (default \fI~/.config\fR).
 .TP
 .B XDG_STATE_HOME
 Base of the user state directory (default \fI~/.local/state\fR).
+.TP
+.B TERM
+The terminal type.  avoe writes plain ANSI sequences and does not read
+.IR terminfo .
 .SH SEE ALSO
 .IR PREFIX/share/doc/avoe/README.md ,
-.I PREFIX/share/doc/avoe/avoe-script.md
+.IR PREFIX/share/doc/avoe/avoe\-script.md ,
+.IR PREFIX/share/doc/avoe/CHANGELOG.md ,
+.BR jove (1),
+.BR emacs (1)
+.PP
+.I https://github.com/UlrikHjort/Ada-Version-of-Emacs-Avoe
+.SH AUTHOR
+Ulrik H\(/orlyk Hjort.
+.SH COPYRIGHT
+Copyright \(co 2026 Ulrik H\(/orlyk Hjort.  MIT licence.
