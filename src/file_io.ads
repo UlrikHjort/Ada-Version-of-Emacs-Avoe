@@ -44,6 +44,8 @@ package File_IO is
    --  (for example because the file does not exist yet).
 
    function Rename (From, To : String) return Boolean;
+   function Change_Mode (Path : String; Mode : Natural) return Boolean;
+   --  Set the permission bits; False if the system refused.
    procedure Set_Mode (Path : String; Mode : Natural);
    procedure Sync (Path : String);
    procedure Delete (Path : String);

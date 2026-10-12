@@ -29,6 +29,8 @@ with Auto_Save;
 with Buffer_List;
 with Commands;   use Commands;
 with File_Names;
+with File_IO;
+with File_Modes;
 with Modes;
 with Minibuffer; use Minibuffer;
 with Utils;      use Utils;
@@ -491,6 +493,53 @@ package body File_Commands is
 
    -------------------------------------------------------------------------
 
+   --  M-x chmod: ask for a file, then for its new mode, as chmod(1) takes
+   --  it: an octal number or symbolic changes such as "u+x,go-w"
+   procedure Chmod is
+      Name : Unbounded_String;
+      Mode : Unbounded_String;
+      Ok   : Boolean;
+   begin
+      Read_String ("Change mode of file: ",
+                   (if Length (Cur.File_Name) > 0
+                    then File_Names.Abbreviate (To_String (Cur.File_Name))
+                    else Default_Directory),
+                   Name, Ok, File_Completer);
+      if not Ok or else Length (Name) = 0 then
+         return;
+      end if;
+      declare
+         Full : constant String := File_Names.Absolute (To_String (Name));
+         Shown : constant String := File_Names.Abbreviate (Full);
+         Info : constant File_IO.File_Info := File_IO.Info (Full);
+         New_Mode : Natural;
+      begin
+         if not Info.Exists then
+            Message ("No such file: " & Shown);
+            return;
+         end if;
+         Read_String ("Mode of " & Shown & " (now " & File_Modes.Octal (Info.Mode)
+                      & " " & File_Modes.Image (Info.Mode) & "): ", "", Mode, Ok,
+                      History => "chmod");
+         if not Ok or else Length (Mode) = 0 then
+            return;
+         end if;
+         File_Modes.Parse (To_String (Mode), Info.Mode,
+                           Is_Directory => not Info.Regular and then
+                             File_Names.Is_Directory (Full),
+                           Result => New_Mode, Ok => Ok);
+         if not Ok then
+            Message ("Not a mode: " & To_String (Mode)
+                     & "  (try 644, or u+x, or go-w)");
+         elsif not File_IO.Change_Mode (Full, New_Mode) then
+            Message ("Cannot change the mode of " & Shown);
+         else
+            Message ("Mode of " & Shown & " is now " & File_Modes.Octal (New_Mode)
+                     & " " & File_Modes.Image (New_Mode));
+         end if;
+      end;
+   end Chmod;
+
    procedure Register_All is
    begin
       Register ("find_file", Find_File'Access);
@@ -503,6 +552,7 @@ package body File_Commands is
       Register ("revert_buffer", Revert_Buffer'Access);
       Register ("find_other_file", Find_Other_File'Access);
       Register ("recover_file", Recover_File'Access);
+      Register ("chmod", Chmod'Access);
 
       Register ("switch_to_buffer", Switch_To_Buffer'Access);
       Register ("list_buffers", List_Buffers'Access);

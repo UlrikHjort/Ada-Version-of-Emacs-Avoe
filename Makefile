@@ -40,7 +40,7 @@ test: all
 	                     test_python_shell test_install test_safety test_minibuffer \
 	                     test_regex test_editing2 test_shell test_ada_tools \
 	                     test_script_data test_robustness test_editing3 test_exit test_line_numbers test_startup test_integrity \
-	                     test_keyboard_model test_fuzz; do \
+	                     test_keyboard_model test_fuzz test_chmod; do \
 	  echo "== $$t"; python3 $$t.py || exit 1; done
 
 install: all
