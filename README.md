@@ -277,6 +277,7 @@ upper-case letters ignores case.
 | C-x i     | insert_file              |
 | C-x C-q   | toggle_read_only         |
 |           | revert_buffer, recover_file (via M-x) |
+|           | chmod (via M-x): change a file's permissions, as `644` or `u+x,go-w` |
 | C-x b     | switch_to_buffer         |
 | C-x C-b   | list_buffers             |
 | C-x k     | kill_buffer              |

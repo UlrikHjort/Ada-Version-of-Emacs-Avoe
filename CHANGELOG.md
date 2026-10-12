@@ -6,6 +6,9 @@ features.
 
 ## Unreleased
 
+- `M-x chmod` changes a file's permissions. It asks for the file (offering the
+  one being edited) and then for the mode, octal (`644`, `4755`) or symbolic
+  (`u+x`, `go-w`, `a=r`, `u+rw,go-rwx`), and shows the mode before and after.
 - Man page added.
 - A build no longer formats the C sources (`AUTOFORMAT=no` by default), so it
   never changes the source tree; `make format` still does it on request.

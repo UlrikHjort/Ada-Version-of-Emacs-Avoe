@@ -73,6 +73,9 @@ package body File_IO is
    function Rename (From, To : String) return Boolean is
      (C_Rename (To_C (From), To_C (To)) = 0);
 
+   function Change_Mode (Path : String; Mode : Natural) return Boolean is
+     (C_Chmod (To_C (Path), int (Mode)) = 0);
+
    --  Set_Mode, Sync and Delete ignore failures on purpose: they are
    --  extras around a save that must not make it fail
 
