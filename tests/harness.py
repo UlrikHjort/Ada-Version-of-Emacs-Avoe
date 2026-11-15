@@ -71,9 +71,11 @@ def read(p):
         return f.read()
 
 
-def run(args, keys, rows=24, cols=80, env=None, delay=0.08, splash=False):
+def run(args, keys, rows=24, cols=80, env=None, delay=0.08, splash=False, exit_wait=10):
     """Run avoe in a pty, typing keys (b"" entries just wait).
-    Returns (exit code or None if it had to be killed, screen output)."""
+    Returns (exit code or None if it had to be killed, screen output).
+    exit_wait is how long to wait for it to exit after the last key: tests
+    that expect it to keep running can give a short one."""
     if env is None:
         env = dict(os.environ, HOME=EMPTY_HOME)
     pid, fd = pty.fork()
@@ -98,7 +100,10 @@ def run(args, keys, rows=24, cols=80, env=None, delay=0.08, splash=False):
         if k:
             os.write(fd, k)
         pump(delay)
-    for _ in range(40):
+    # The default is generous, as a slow CI machine can spend seconds in the
+    # fsync of a save; a program that exits promptly still returns at once
+    deadline = time.time() + exit_wait
+    while time.time() < deadline:
         p, status = os.waitpid(pid, os.WNOHANG)
         if p:
             return os.waitstatus_to_exitcode(status), out

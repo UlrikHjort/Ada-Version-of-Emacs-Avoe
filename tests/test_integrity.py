@@ -195,7 +195,7 @@ while len(keys) % 5:                  # Auto-save runs every 5 keys
     keys.append(b"x")
     typed += "x"
 p = write_bytes("recover.txt", big)
-run([p], keys, env=env)               # No exit key: killed like a crash
+run([p], keys, env=env, exit_wait=2)  # No exit key: killed like a crash
 check("a crash leaves the file on disk unchanged", read_bytes(p) == big)
 code, out = run([p], [b"y"] + SAVE_EXIT, env=env)
 check("recovering after the crash restores every byte and every change",
