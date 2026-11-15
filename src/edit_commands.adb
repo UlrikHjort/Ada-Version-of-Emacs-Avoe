@@ -469,6 +469,18 @@ package body Edit_Commands is
          Message ("End of buffer");
          return;
       end if;
+      --  With a prefix argument N, as in Emacs: kill N whole lines from
+      --  point, newlines included, so C-u 100 C-k kills 100 lines
+      if Arg_Given then
+         Q := P;
+         for I in 1 .. Prefix_Arg loop
+            Q := Line_End (B, Q);
+            exit when Q >= Len;
+            Q := Q + 1;
+         end loop;
+         Kill (P, Q);
+         return;
+      end if;
       while Q < E and then Char_At (B, Q) in ' ' | L1.HT loop
          Q := Q + 1;
       end loop;
@@ -1287,7 +1299,7 @@ package body Edit_Commands is
       Register ("set_mark", Set_Mark'Access);
       Register ("exchange_point_and_mark", Exchange_Point_And_Mark'Access);
       Register ("mark_whole_buffer", Mark_Whole_Buffer'Access);
-      Register ("kill_line", Kill_Line'Access, Repeatable => True);
+      Register ("kill_line", Kill_Line'Access);
       Register ("kill_region", Kill_Region'Access);
       Register ("copy_region", Copy_Region'Access);
       Register ("kill_word", Kill_Word'Access, Repeatable => True);

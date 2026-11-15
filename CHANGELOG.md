@@ -6,6 +6,11 @@ features.
 
 ## Unreleased
 
+- `M-0` .. `M-9` (and `ESC <digit>`) give a prefix argument, as in Emacs:
+  `M-1 0 0 C-k` kills 100 lines. Before, only `C-u` did.
+- `C-k` with a count N kills N whole lines, newlines included, as in Emacs.
+  This also changes scripts: `Kill_Line (2);` used to kill the rest of the
+  line and then the newline; it now kills two lines.
 - `M-x chmod` changes a file's permissions. It asks for the file (offering the
   one being edited) and then for the mode, octal (`644`, `4755`) or symbolic
   (`u+x`, `go-w`, `a=r`, `u+rw,go-rwx`), and shows the mode before and after.

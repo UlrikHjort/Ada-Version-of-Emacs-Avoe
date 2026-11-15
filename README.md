@@ -204,7 +204,8 @@ scripts can bind keys to their own commands the same way.
 `M-x` accepts both `find_file` and `find-file`.
 
 `C-u` gives a prefix argument: `C-u 8 C-f` moves 8 characters, `C-u C-u x`
-inserts 16 x's, `C-u 42 M-g g` goes to line 42.
+inserts 16 x's, `C-u 42 M-g g` goes to line 42. `M-<digit>` (or `ESC <digit>`)
+starts one too: `M-1 0 0 C-k` kills 100 lines.
 
 ## Keys
 
@@ -292,6 +293,7 @@ upper-case letters ignores case.
 |---------|--------------------------|
 | M-x     | execute_extended_command (TAB completes) |
 | C-u     | universal_argument       |
+| M-0 .. M-9 | digit_argument        |
 | C-g     | keyboard_quit            |
 | M-:     | eval_expression          |
 | M-!     | shell_command: one line of output is shown as a message, more in `*Shell Command Output*`; with C-u the output is inserted |
