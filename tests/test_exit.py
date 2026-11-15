@@ -43,19 +43,19 @@ check("by default a modified *scratch* exits without asking", code == 0 and QUES
       repr(code))
 
 # With Set_Confirm_Exit (True)
-code, out = run([], [b"hello"] + EXIT + [b"no\r"], env=confirm_env)
+code, out = run([], [b"hello"] + EXIT + [b"no\r"], env=confirm_env, exit_wait=2)
 check("no stays", code is None and QUESTION in out, repr(code))
 
 code, out = run([], [b"hello"] + EXIT + [b"no\r"] + EXIT + [b"yes\r"], env=confirm_env)
 check("asking again after no, then yes leaves", code == 0, repr(code))
 
-code, out = run([], [b"hello"] + EXIT + [b"y\r"], env=confirm_env)
+code, out = run([], [b"hello"] + EXIT + [b"y\r"], env=confirm_env, exit_wait=2)
 check("y is not an answer", code is None and b"leave anyway? (please type yes or no)" in out, repr(code))
 
 code, out = run([], [b"hello"] + EXIT + [b"y\r", b"YES\r"], env=confirm_env)
 check("YES after a wrong answer leaves", code == 0, repr(code))
 
-code, out = run([], [b"hello"] + EXIT + [ctl("g")], env=confirm_env)
+code, out = run([], [b"hello"] + EXIT + [ctl("g")], env=confirm_env, exit_wait=2)
 check("C-g cancels exiting", code is None and QUESTION in out, repr(code))
 
 code, out = run([], EXIT, env=confirm_env)

@@ -89,7 +89,7 @@ env = dict(os.environ, HOME=os.path.join(WORK, "safe"),
 f = path("safe/crash.txt", "base\n")
 auto = os.path.join(state, "avoe", "auto-save", "#" + f.replace("/", "!") + "#")
 
-code, out = run([f], [b"unsaved!", b"", b""], env=env)   # no exit key: killed like a crash
+code, out = run([f], [b"unsaved!", b"", b""], env=env, exit_wait=2)   # no exit key: killed like a crash
 check("auto-save file written before the crash",
       code is None and os.path.exists(auto) and read(auto).startswith("unsav"), repr(code))
 
