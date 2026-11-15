@@ -110,17 +110,24 @@ package body Editor is
       return K;
    end Meta_Of_Esc;
 
-   procedure Read_Universal_Argument (Next : out Key) is
-      Value       : Natural := 4;
-      Digits_Seen : Boolean := False;
+   --  Read the rest of a prefix argument.  C-u starts with no digits (the
+   --  value 4, multiplied by further C-u's); M-<digit> (or ESC <digit>)
+   --  starts with that digit.  Then digits, with or without Meta, extend
+   --  the number.  Next is the first key after the argument.
+   procedure Read_Prefix_Argument
+     (Next : out Key; Start : Natural := 4; Digits_Given : Boolean := False)
+   is
+      Value       : Natural := Start;
+      Digits_Seen : Boolean := Digits_Given;
       K           : Key;
    begin
       loop
          K := Read_Key_Echo ("C-u " & (if Digits_Seen then Img (Value) & " " else "")
                              & "-");
-         if not K.Meta and then K.Code = Ctl_U and then not Digits_Seen then
+         K := Meta_Of_Esc (K, "C-u " & (if Digits_Seen then Img (Value) & " " else ""));
+         if not K.Meta and then not K.Ctrl and then K.Code = Ctl_U and then not Digits_Seen then
             Value := Natural'Min (Value * 4, 1_000_000);
-         elsif not K.Meta
+         elsif not K.Ctrl
            and then K.Code in Character'Pos ('0') .. Character'Pos ('9')
          then
             if not Digits_Seen then
@@ -135,7 +142,7 @@ package body Editor is
       end loop;
       Prefix_Arg := Positive'Max (1, Value);
       Arg_Given := True;
-   end Read_Universal_Argument;
+   end Read_Prefix_Argument;
 
    --  Look K up in the mode map first, then in the global map.  After a
    --  prefix key both maps have advanced to their sub-maps (or null).
@@ -190,8 +197,16 @@ package body Editor is
                declare
                   Name : constant String := To_String (Bnd.Name);
                begin
-                  if Name = "universal_argument" then
-                     Read_Universal_Argument (K);
+                  if Name = "universal_argument"
+                    or else (Name = "digit_argument"
+                             and then K.Code in Character'Pos ('0') .. Character'Pos ('9'))
+                  then
+                     if Name = "universal_argument" then
+                        Read_Prefix_Argument (K);
+                     else
+                        Read_Prefix_Argument
+                          (K, Start => K.Code - Character'Pos ('0'), Digits_Given => True);
+                     end if;
                      Map := Global_Map;
                      Mode_M := Mode_Map (Windows.Current_Buffer.Mode);
                      Seq := Null_Unbounded_String;
@@ -312,6 +327,11 @@ package body Editor is
    begin
       null;  --  Handled by Dispatch; registered so it can be bound
    end Universal_Argument;
+
+   procedure Digit_Argument is
+   begin
+      null;  --  Handled by Dispatch (on M-0 .. M-9); registered so it can be bound
+   end Digit_Argument;
 
    -------------------------------------------------------------------------
    --  Keyboard macros
@@ -564,6 +584,9 @@ package body Editor is
       B ("C-g", "keyboard_quit");
       B ("C-M-g", "keyboard_quit");
       B ("C-u", "universal_argument");
+      for D in Character range '0' .. '9' loop
+         B ("M-" & D, "digit_argument");
+      end loop;
       B ("M-x", "execute_extended_command");
       B ("C-z", "suspend_editor");
       B ("M-:", "eval_expression");
@@ -643,6 +666,7 @@ package body Editor is
       Register ("describe_bindings", Describe_Bindings'Access);
       Register ("suspend_editor", Suspend_Editor'Access);
       Register ("universal_argument", Universal_Argument'Access);
+      Register ("digit_argument", Digit_Argument'Access);
       Register ("start_kbd_macro", Start_Kbd_Macro'Access);
       Register ("end_kbd_macro", End_Kbd_Macro'Access);
       Register ("call_last_kbd_macro", Call_Last_Kbd_Macro'Access);

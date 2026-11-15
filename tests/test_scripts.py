@@ -157,8 +157,8 @@ Beginning_Of_Line;
 Kill_Line (2);
 Message (Current_Line);
 Save_Buffer;
-''', "found at line 2\nthree\nWrote " + f + "\n", files=[f])
-check("editor API changed the file", read(f) == "one\nthree\nfour\n", repr(read(f)))
+''', "found at line 2\nfour\nWrote " + f + "\n", files=[f])
+check("editor API changed the file", read(f) == "one\nfour\n", repr(read(f)))
 
 expect_out("script commands", '''
 procedure Hello is

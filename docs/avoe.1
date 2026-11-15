@@ -98,6 +98,10 @@ followed by digits and a command runs it that many times, so
 inserts forty dashes.
 .B C-u
 without digits means four.
+.BR M-0 " .. " M-9
+(or ESC and a digit) start a count the same way, so
+.B "M-1 0 0 C-k"
+kills a hundred lines.
 .PP
 While a command asks for something in the echo area, the usual editing
 keys work there too: C-a, C-e, C-b, C-f and the arrow keys move, DEL and

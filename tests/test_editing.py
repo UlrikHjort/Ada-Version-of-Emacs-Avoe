@@ -46,6 +46,15 @@ f = path("p1.txt", "")
 run([f], [ctl("u"), b"5", b"x", ctl("u"), b"-"] + SAVE_EXIT)
 check("C-u 5 x and C-u -", read(f) == "xxxxx----", repr(read(f)))
 
+f = path("p2.txt", "".join("line %d\n" % i for i in range(1, 121)))
+run([f], [meta("1"), b"0", b"0", ctl("k")] + SAVE_EXIT)
+check("M-1 0 0 C-k kills 100 lines",
+      read(f) == "".join("line %d\n" % i for i in range(101, 121)), repr(read(f)[:40]))
+
+f = path("p3.txt", "")
+run([f], [meta("3"), meta("2"), b"y", meta("4"), b"-"] + SAVE_EXIT)
+check("M-3 M-2 y and M-4 -", read(f) == "y" * 32 + "----", repr(read(f)))
+
 f = path("k1.txt", "first\nsecond\n")
 run([f], [ctl("k"), ctl("k"), ctl("k"), ctl("k"), ctl("y"), meta("y")] + SAVE_EXIT)
 check("consecutive kills append", read(f) == "first\nsecond\n", repr(read(f)))
