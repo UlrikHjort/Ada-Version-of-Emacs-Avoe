@@ -1,0 +1,56 @@
+-- ***************************************************************************
+--                         Avoe - verilog-mode script
+--
+--           Copyright (C) 2026 By Ulrik Hørlyk Hjort
+--
+-- Permission is hereby granted, free of charge, to any person obtaining
+-- a copy of this software and associated documentation files (the
+-- "Software"), to deal in the Software without restriction, including
+-- without limitation the rights to use, copy, modify, merge, publish,
+-- distribute, sublicense, and/or sell copies of the Software, and to
+-- permit persons to whom the Software is furnished to do so, subject to
+-- the following conditions:
+--
+-- The above copyright notice and this permission notice shall be
+-- included in all copies or substantial portions of the Software.
+--
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+-- EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+-- MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+-- NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+-- LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+-- OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+-- WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+-- ***************************************************************************
+
+--  Verilog mode for Avoe, written in Avoe script.
+--
+--  Highlighting only.  Verilog is case sensitive.  ' is not a string quote
+--  here, since it appears in sized numbers (8'hFF), so Backslash_Escapes is
+--  off; a \" inside a string ends the highlighted string early.
+--  Compiler directives (`define, `ifdef ...) show as keywords.
+
+Define_Mode
+  (Name                => "verilog",
+   Title               => "Verilog",
+   Extensions          => ".v .vh",
+   Keywords            => "always and assign automatic begin buf bufif0 bufif1 case casex "
+                          & "casez cell cmos config deassign default defparam design disable "
+                          & "edge else end endcase endconfig endfunction endgenerate endmodule "
+                          & "endprimitive endspecify endtable endtask for force forever fork "
+                          & "function generate if ifnone incdir include initial inout input "
+                          & "instance join large liblist library localparam macromodule medium "
+                          & "module nand negedge nmos nor noshowcancelled not notif0 notif1 or "
+                          & "output parameter pmos posedge primitive pull0 pull1 pulldown pullup "
+                          & "pulsestyle_ondetect pulsestyle_onevent rcmos release repeat rnmos "
+                          & "rpmos rtran rtranif0 rtranif1 scalared showcancelled small specify "
+                          & "specparam strong0 strong1 table task tran tranif0 tranif1 use "
+                          & "vectored wait weak0 weak1 while xnor xor highz0 highz1 "
+                          & "define undef ifdef ifndef elsif endif timescale resetall "
+                          & "default_nettype celldefine endcelldefine",
+   Types               => "wire reg integer real realtime time tri tri0 tri1 triand trior "
+                          & "trireg wand wor uwire supply0 supply1 signed unsigned genvar event",
+   Line_Comment        => "//",
+   Block_Comment_Start => "/*",
+   Block_Comment_End   => "*/",
+   Backslash_Escapes   => False);

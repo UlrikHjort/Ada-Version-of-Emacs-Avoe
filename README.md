@@ -123,10 +123,13 @@ mode line:
 | C           | `.c .h`                   | highlighting, K&R indentation (script) |
 | Python      | `.py .pyw`                | highlighting, block indentation, TAB cycling (script) |
 | Shell       | `.sh .bash .zsh .bashrc .profile ...` | highlighting, if/for/case indentation (script) |
+| VHDL        | `.vhd .vhdl`              | highlighting (script)                  |
+| Verilog     | `.v .vh`                  | highlighting (script)                  |
+| UCF         | `.ucf` (Xilinx constraints) | highlighting (script)                |
 | Compilation | `*compilation*`           | coloured errors/warnings, jump to them |
 | Fundamental | everything else           | plain text                             |
 
-The C, Python and shell modes are written entirely in Avoe script: see
+The C, Python, shell, VHDL, Verilog and UCF modes are written entirely in Avoe script: see
 [share/avoe/](share/avoe/). Shared text helpers are in `00-helpers.avoe`.
 In each mode file, the `Define_Mode` call gives the syntax table, which
 drives the native highlighter. The indentation commands are ordinary

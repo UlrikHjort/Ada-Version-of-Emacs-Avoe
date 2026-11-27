@@ -6,6 +6,8 @@ features.
 
 ## Unreleased
 
+- VHDL (`.vhd`, `.vhdl`), Verilog (`.v`, `.vh`) and Xilinx UCF (`.ucf`)
+  modes with syntax highlighting, written in Avoe script.
 - `M-0` .. `M-9` (and `ESC <digit>`) give a prefix argument, as in Emacs:
   `M-1 0 0 C-k` kills 100 lines. Before, only `C-u` did.
 - `C-k` with a count N kills N whole lines, newlines included, as in Emacs.

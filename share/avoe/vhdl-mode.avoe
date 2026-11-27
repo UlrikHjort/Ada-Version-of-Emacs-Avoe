@@ -1,0 +1,61 @@
+-- ***************************************************************************
+--                          Avoe - vhdl-mode script
+--
+--           Copyright (C) 2026 By Ulrik Hørlyk Hjort
+--
+-- Permission is hereby granted, free of charge, to any person obtaining
+-- a copy of this software and associated documentation files (the
+-- "Software"), to deal in the Software without restriction, including
+-- without limitation the rights to use, copy, modify, merge, publish,
+-- distribute, sublicense, and/or sell copies of the Software, and to
+-- permit persons to whom the Software is furnished to do so, subject to
+-- the following conditions:
+--
+-- The above copyright notice and this permission notice shall be
+-- included in all copies or substantial portions of the Software.
+--
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+-- EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+-- MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+-- NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+-- LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+-- OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+-- WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+-- ***************************************************************************
+
+--  VHDL mode for Avoe, written in Avoe script.
+--
+--  Highlighting only.  VHDL is case insensitive, so ENTITY, Entity and
+--  entity are all keywords.  ' is not a string quote here: it is also the
+--  attribute tick (clk'event), so character literals are left alone.
+--  VHDL-2008 /* */ block comments are recognised.
+
+Define_Mode
+  (Name                => "vhdl",
+   Title               => "VHDL",
+   Extensions          => ".vhd .vhdl",
+   Keywords            => "abs access after alias all and architecture array assert attribute "
+                          & "begin block body buffer bus case component configuration constant "
+                          & "context default disconnect downto else elsif end entity exit file "
+                          & "for force function generate generic group guarded if impure in "
+                          & "inertial inout is label library linkage literal loop map mod nand "
+                          & "new next nor not null of on open or others out package port "
+                          & "postponed procedure process protected pure range record register "
+                          & "reject release rem report return rol ror select severity shared "
+                          & "signal sla sll sra srl subtype then to transport type unaffected "
+                          & "units until use variable wait when while with xnor xor",
+   Types               => "bit bit_vector boolean boolean_vector character integer "
+                          & "integer_vector natural positive real real_vector string time "
+                          & "time_vector severity_level file_open_kind line text std_logic "
+                          & "std_logic_vector std_ulogic std_ulogic_vector signed unsigned "
+                          & "ufixed sfixed float true false ieee std work std_logic_1164 "
+                          & "numeric_std numeric_bit std_logic_unsigned std_logic_signed "
+                          & "std_logic_arith textio math_real rising_edge falling_edge "
+                          & "to_integer to_unsigned to_signed to_stdlogicvector "
+                          & "to_stdulogicvector conv_integer conv_std_logic_vector resize "
+                          & "shift_left shift_right note warning error failure",
+   Line_Comment        => "--",
+   Block_Comment_Start => "/*",
+   Block_Comment_End   => "*/",
+   Backslash_Escapes   => False,
+   Case_Sensitive      => False);

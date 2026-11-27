@@ -60,7 +60,7 @@ env.pop("AVOE_DATA_DIR", None)
 
 r = subprocess.run([installed, "--paths"], capture_output=True, text=True, env=env)
 check("--paths shows the installed data directory",
-      r.returncode == 0 and prefix + "/share/avoe  (4 scripts)" in r.stdout
+      r.returncode == 0 and prefix + "/share/avoe  (%d scripts)" % len(glob.glob(os.path.join(ROOT, "share/avoe/*.avoe"))) in r.stdout
       and config + "/avoe/init.avoe" in r.stdout, r.stdout + r.stderr)
 
 c_file = path("install/x.c", "int x;\n")
